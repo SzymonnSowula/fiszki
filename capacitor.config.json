@@ -1,0 +1,7 @@
+{
+  "appId": "pl.fiszki.app",
+  "appName": "Fiszki",
+  "webDir": "dist",
+  "backgroundColor": "#14110f",
+  "ios": { "contentInset": "never" }
+}

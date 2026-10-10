@@ -1,0 +1,38 @@
+name: Fiszki iOS (.ipa)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+
+jobs:
+  ipa:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Projekt iOS
+        run: |
+          npx cap add ios
+          cp public/icon-1024.png ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png
+          npx cap sync ios
+      - name: Kompilacja bez podpisu
+        run: |
+          cd ios/App
+          PROJ=$( [ -d App.xcworkspace ] && echo "-workspace App.xcworkspace" || echo "-project App.xcodeproj" )
+          xcodebuild $PROJ -scheme App -configuration Release -sdk iphoneos \
+            -destination 'generic/platform=iOS' -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
+      - name: Pakowanie .ipa
+        run: |
+          mkdir -p out/Payload
+          cp -R ios/App/build/Build/Products/Release-iphoneos/App.app out/Payload/
+          cd out && zip -qry Fiszki.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Fiszki-ipa
+          path: out/Fiszki.ipa
