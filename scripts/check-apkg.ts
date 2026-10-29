@@ -6,7 +6,8 @@ import { answerMatches, answerMatchesLine, buildOptions, latinEnglishLabel } fro
 import { parseApkg } from '../src/lib/apkg'
 import { cardsFor, deckStorageId, getMedia, saveImported } from '../src/lib/db'
 import { renderTemplate } from '../src/lib/html'
-import { DAY, TEN_MIN, applyGrade, blankProgress, formatDelay, nextDelays } from '../src/lib/srs'
+import { DEFAULT_SETTINGS, limitOf, joinDelay, splitDelay } from '../src/lib/settings'
+import { DAY, applyGrade, blankProgress, formatDelay, nextDelays } from '../src/lib/srs'
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message)
@@ -39,6 +40,7 @@ function unit() {
   assert(!answerMatchesLine('luk zebrowy', 'Arcus costalis'))
   assert(!answerMatchesLine('luk zebrowy', 'Costal arch'))
 
+  const TEN_MIN = 10 * 60_000
   let progress = blankProgress('card', 'deck')
   const freshDelays = nextDelays(0, false)
   const freshLabels = (['again', 'hard', 'good', 'easy'] as const).map((grade) => formatDelay(freshDelays[grade]))
@@ -55,6 +57,15 @@ function unit() {
   const hardAfterGood = nextDelays(DAY, false).hard
   const goodAfterGood = nextDelays(DAY, false).good
   assert(hardAfterGood < goodAfterGood, `${hardAfterGood} vs ${goodAfterGood}`)
+
+  const custom = { ...DEFAULT_SETTINGS, steps: { again: 5 * 60_000, hard: 3_600_000, good: 2 * DAY, easy: 7 * DAY }, growth: { hard: 1.5, good: 3, easy: 4 } }
+  const customFresh = nextDelays(0, true, custom)
+  assert(customFresh.again === 5 * 60_000 && customFresh.hard === 3_600_000 && customFresh.good === 2 * DAY && customFresh.easy === 7 * DAY, JSON.stringify(customFresh))
+  const customLater = nextDelays(2 * DAY, false, custom)
+  assert(customLater.good === 6 * DAY && customLater.hard === 3 * DAY && customLater.easy === 7 * DAY, JSON.stringify(customLater))
+  assert(applyGrade(blankProgress('c', 'd'), 'good', 0, false, custom).delayMs === 2 * DAY, 'custom good')
+  assert(limitOf(0, 37) === 37 && limitOf(20, 37) === 20 && limitOf(50, 37) === 37, 'limitOf')
+  assert(splitDelay(4 * DAY).unit === 'day' && splitDelay(90 * 60_000).unit === 'min' && joinDelay(2, 'hour') === 7_200_000, 'units')
 
   const options = buildOptions(
     { key: 'a', lines: ['Arcus', 'arch', 'Łuk'], frontText: '' },

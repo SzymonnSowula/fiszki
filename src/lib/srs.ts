@@ -1,8 +1,7 @@
 import type { Grade, Progress } from '../types'
+import { DEFAULT_SETTINGS, type Settings } from './settings'
 
 export const DAY = 86_400_000
-export const TEN_MIN = 10 * 60_000
-const HOUR = 60 * 60_000
 
 function round2(value: number): number {
   return Math.round(value * 100) / 100
@@ -33,20 +32,20 @@ export function scheduledDelay(progress: Progress): number {
   return 0
 }
 
-export function nextDelays(previousMs: number, againRepeat: boolean): Record<Grade, number> {
-  const again = againRepeat ? TEN_MIN : 0
-  const good = previousMs < DAY ? DAY : Math.round(previousMs * 2.5)
-  let easy = previousMs < 4 * DAY ? 4 * DAY : Math.round(previousMs * 3.5)
+export function nextDelays(previousMs: number, againRepeat: boolean, settings: Settings = DEFAULT_SETTINGS): Record<Grade, number> {
+  const { steps, growth } = settings
+  const fresh = previousMs < steps.good
+  const again = againRepeat ? steps.again : 0
+  const good = fresh ? steps.good : Math.round(previousMs * growth.good)
+  let easy = previousMs < steps.easy ? steps.easy : Math.round(previousMs * growth.easy)
   if (easy <= good) easy = Math.round(good * 1.4)
-  let hard = previousMs < DAY ? TEN_MIN : Math.min(DAY, Math.max(TEN_MIN, Math.round(previousMs * 0.4)))
-  if (hard <= again) hard = HOUR
-  if (hard >= good) hard = Math.max(HOUR, Math.round(good / 2))
-  if (hard >= good) hard = Math.max(TEN_MIN, good - HOUR)
+  let hard = fresh ? steps.hard : Math.round(previousMs * growth.hard)
+  if (hard >= good) hard = Math.max(Math.min(steps.hard, good - 60_000), Math.round(good / 2))
   return { again, hard, good, easy }
 }
 
-export function applyGrade(progress: Progress, grade: Grade, now = Date.now(), againRepeat = false): Progress {
-  const delay = nextDelays(scheduledDelay(progress), grade === 'again' && againRepeat)[grade]
+export function applyGrade(progress: Progress, grade: Grade, now = Date.now(), againRepeat = false, settings: Settings = DEFAULT_SETTINGS): Progress {
+  const delay = nextDelays(scheduledDelay(progress), grade === 'again' && againRepeat, settings)[grade]
   const next: Progress = {
     ...progress,
     reviews: progress.reviews + 1,

@@ -3,6 +3,7 @@ import { CardFace } from '../components/CardFace'
 import { DonePanel, SessionChrome } from '../components/Session'
 import { buildOptions, choiceLabel } from '../lib/answers'
 import { recordPractice } from '../lib/db'
+import { loadSettings } from '../lib/settings'
 import { MODE_INFO } from '../modes'
 import type { CardRow } from '../types'
 
@@ -16,7 +17,9 @@ function nextCard(pool: readonly CardRow[], previous?: string): CardRow {
 }
 
 export function SprintSession({ deckId, cards, onExit }: { deckId: string; cards: CardRow[]; onExit: () => void }) {
-  const [left, setLeft] = useState(60)
+  const [settings] = useState(loadSettings)
+  const seconds = settings.sprintSeconds
+  const [left, setLeft] = useState(seconds)
   const [score, setScore] = useState(0)
   const [misses, setMisses] = useState(0)
   const [streak, setStreak] = useState(0)
@@ -25,7 +28,7 @@ export function SprintSession({ deckId, cards, onExit }: { deckId: string; cards
   const [card, setCard] = useState(() => (cards.length ? nextCard(cards) : null))
   const [options, setOptions] = useState(() => (card ? buildOptions(card, cards) : []))
   const [picked, setPicked] = useState<string | null>(null)
-  const endAt = useRef(Date.now() + 60_000)
+  const endAt = useRef(Date.now() + seconds * 1000)
   const lock = useRef(false)
   const info = MODE_INFO.sprint
 
@@ -100,11 +103,11 @@ export function SprintSession({ deckId, cards, onExit }: { deckId: string; cards
       <SessionChrome title={info.title} detail="Czas minął" onExit={onExit}>
         <DonePanel
           kicker={`${score} trafień`}
-          title={score >= 15 ? 'Szybko.' : 'Minuta za tobą.'}
+          title={score >= Math.round(seconds / 4) ? 'Szybko.' : 'Sprint za tobą.'}
           text={`Pomyłki: ${misses}. Najdłuższa seria: ${best}.`}
           onAgain={() => {
-            endAt.current = Date.now() + 60_000
-            setLeft(60)
+            endAt.current = Date.now() + seconds * 1000
+            setLeft(seconds)
             setScore(0)
             setMisses(0)
             setStreak(0)
@@ -123,7 +126,7 @@ export function SprintSession({ deckId, cards, onExit }: { deckId: string; cards
   return (
     <SessionChrome title={info.title} detail={`${left} s · seria ${streak}`} hint={info.hint} onExit={onExit}>
       <div className="timebar" aria-hidden="true">
-        <span style={{ width: `${(left / 60) * 100}%` }} />
+        <span style={{ width: `${(left / seconds) * 100}%` }} />
       </div>
       <div className="sheet">
         <CardFace html={card.frontHtml || `<p>${card.frontText || 'Fiszka'}</p>`} css={card.css} deckId={deckId} />

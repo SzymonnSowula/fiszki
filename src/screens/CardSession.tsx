@@ -6,6 +6,7 @@ import { putProgress, recordPractice } from '../lib/db'
 import { isPlainAnswer } from '../lib/html'
 import { exerciseFor, makePrompt } from '../lib/prompts'
 import { buildBrowseQueue, buildPracticeQueue, buildSrsQueue } from '../lib/queue'
+import { loadSettings, type Settings } from '../lib/settings'
 import { applyGrade, blankProgress, formatDelay, nextDelays, scheduledDelay } from '../lib/srs'
 import { MODE_INFO } from '../modes'
 import type { CardRow, Grade, Mode, Progress } from '../types'
@@ -17,15 +18,10 @@ const GRADES: { id: Grade; label: string }[] = [
   { id: 'easy', label: 'Łatwo' },
 ]
 
-function limitFor(mode: Mode): number {
-  if (mode === 'type' || mode === 'mixed') return 12
-  return 15
-}
-
-function initialQueue(mode: Mode, cards: CardRow[], progress: Progress[]): CardRow[] {
-  if (mode === 'srs') return buildSrsQueue(cards, progress)
+function initialQueue(mode: Mode, cards: CardRow[], progress: Progress[], settings: Settings): CardRow[] {
+  if (mode === 'srs') return buildSrsQueue(cards, progress, settings.newPerSession)
   if (mode === 'browse') return buildBrowseQueue(cards)
-  return buildPracticeQueue(cards, limitFor(mode))
+  return buildPracticeQueue(cards, settings.practiceSize)
 }
 
 function requeue<T>(items: readonly T[], at: number): T[] {
@@ -55,8 +51,9 @@ export function CardSession({
   progress: Progress[]
   onExit: () => void
 }) {
+  const [settings] = useState(loadSettings)
   const boot = useRef<CardRow[] | null>(null)
-  if (boot.current === null) boot.current = initialQueue(mode, cards, progress)
+  if (boot.current === null) boot.current = initialQueue(mode, cards, progress, settings)
   const [queue, setQueue] = useState(boot.current)
   const [total, setTotal] = useState(boot.current.length)
   const [phase, setPhase] = useState<'ask' | 'feedback'>('ask')
@@ -140,7 +137,7 @@ export function CardSession({
     if (!card || phase !== 'feedback') return
     const previous = progressRef.current.get(card.key) ?? blankProgress(card.key, deckId)
     const againRepeat = kind === 'again' && (attempts.current.get(card.key) ?? 0) >= 1
-    const next = applyGrade(previous, kind, Date.now(), againRepeat)
+    const next = applyGrade(previous, kind, Date.now(), againRepeat, settings)
     progressRef.current.set(card.key, next)
     void putProgress(next).catch(() => undefined)
     setGrades((current) => ({ ...current, [kind]: current[kind] + 1 }))
@@ -161,7 +158,7 @@ export function CardSession({
   }
 
   function replay() {
-    const nextQueue = initialQueue(mode, cards, [...progressRef.current.values()])
+    const nextQueue = initialQueue(mode, cards, [...progressRef.current.values()], settings)
     boot.current = nextQueue
     setQueue(nextQueue)
     setTotal(nextQueue.length)
@@ -327,7 +324,7 @@ export function CardSession({
             <button key={item.id} type="button" className={`grade ${item.id}`} onClick={() => grade(item.id)}>
               <span>{item.label}</span>
               <small>
-                {formatDelay(nextDelays(scheduledDelay(current), (attempts.current.get(card.key) ?? 0) >= 1)[item.id])}
+                {formatDelay(nextDelays(scheduledDelay(current), (attempts.current.get(card.key) ?? 0) >= 1, settings)[item.id])}
               </small>
             </button>
           ))}

@@ -11,13 +11,13 @@ export const STUDY_MODES: ModeInfo[] = [
   {
     id: 'srs',
     title: 'Mądre uczenie',
-    text: 'Oceniasz kartę, a na przycisku widać, kiedy wróci: w tej sesji, za 10 min, za dzień albo za 4 dni.',
+    text: 'Oceniasz kartę, a na przycisku widać, kiedy wróci. Czasy i liczbę nowych kart zmienisz w ustawieniach.',
     hint: 'Spacja odkrywa · 1–4 ocena',
   },
   {
     id: 'pins',
     title: 'Próbne szpilki',
-    text: '30 sekund na strukturę. Wpisz nazwę po łacinie i po angielsku.',
+    text: 'Wpisz nazwę po łacinie i po angielsku — na czas albo bez limitu (ustawienia).',
     hint: 'Enter sprawdza · ogonki nie są konieczne',
   },
   {
@@ -53,7 +53,7 @@ export const STUDY_MODES: ModeInfo[] = [
   {
     id: 'sprint',
     title: 'Sprint',
-    text: 'Minuta na zegarze. Ile podpisów rozpoznasz?',
+    text: 'Wyścig z zegarem. Ile podpisów rozpoznasz?',
     hint: 'Klawisze 1–4',
   },
 ]

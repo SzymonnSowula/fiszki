@@ -3,6 +3,7 @@ import { CardFace } from '../components/CardFace'
 import { DonePanel, SessionChrome } from '../components/Session'
 import { latinEnglishLabel, shuffle } from '../lib/answers'
 import { recordPractice } from '../lib/db'
+import { loadSettings } from '../lib/settings'
 import { MODE_INFO } from '../modes'
 import type { CardRow } from '../types'
 
@@ -14,7 +15,7 @@ interface PairItem {
   css: string
 }
 
-function roundsOf(cards: readonly CardRow[], size = 5): PairItem[][] {
+function roundsOf(cards: readonly CardRow[], limit: number, size = 5): PairItem[][] {
   const seen = new Set<string>()
   const unique: PairItem[] = []
   for (const card of shuffle(cards)) {
@@ -32,15 +33,17 @@ function roundsOf(cards: readonly CardRow[], size = 5): PairItem[][] {
     })
   }
   const rounds: PairItem[][] = []
-  for (let i = 0; i < unique.length && rounds.length < 3; i += size) {
-    const slice = unique.slice(i, i + size)
+  const take = limit <= 0 ? unique.length : Math.min(unique.length, limit)
+  for (let i = 0; i < take; i += size) {
+    const slice = unique.slice(i, Math.min(i + size, take))
     if (slice.length >= 2) rounds.push(slice)
   }
   return rounds
 }
 
 export function PairsSession({ deckId, cards, onExit }: { deckId: string; cards: CardRow[]; onExit: () => void }) {
-  const [game, setGame] = useState(() => roundsOf(cards))
+  const [settings] = useState(loadSettings)
+  const [game, setGame] = useState(() => roundsOf(cards, settings.practiceSize))
   const [round, setRound] = useState(0)
   const [selected, setSelected] = useState<string | null>(null)
   const [matched, setMatched] = useState<string[]>([])
@@ -52,7 +55,7 @@ export function PairsSession({ deckId, cards, onExit }: { deckId: string; cards:
   const info = MODE_INFO.pairs
 
   function restart() {
-    setGame(roundsOf(cards))
+    setGame(roundsOf(cards, settings.practiceSize))
     setRound(0)
     setSelected(null)
     setMatched([])

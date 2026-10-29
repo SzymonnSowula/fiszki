@@ -3,19 +3,20 @@ import { CardFace } from '../components/CardFace'
 import { DonePanel, SessionChrome } from '../components/Session'
 import { answerMatchesLine, shuffle } from '../lib/answers'
 import { recordPractice } from '../lib/db'
+import { limitOf, loadSettings } from '../lib/settings'
 import { MODE_INFO } from '../modes'
 import type { CardRow } from '../types'
 
-const ROUND = 10
-const SECONDS = 30
-
-function pinQueue(cards: readonly CardRow[]): CardRow[] {
+function pinQueue(cards: readonly CardRow[], size: number): CardRow[] {
   const usable = cards.filter((card) => card.lines.length >= 2 && (card.mediaName || card.frontHtml || card.frontText))
-  return shuffle(usable).slice(0, Math.min(ROUND, usable.length))
+  return shuffle(usable).slice(0, limitOf(size, usable.length))
 }
 
 export function PinsSession({ deckId, cards, onExit }: { deckId: string; cards: CardRow[]; onExit: () => void }) {
-  const [queue, setQueue] = useState(() => pinQueue(cards))
+  const [settings] = useState(loadSettings)
+  const SECONDS = settings.pinsSeconds
+  const timed = SECONDS > 0
+  const [queue, setQueue] = useState(() => pinQueue(cards, settings.pinsSize))
   const [index, setIndex] = useState(0)
   const [phase, setPhase] = useState<'ask' | 'result'>('ask')
   const [left, setLeft] = useState(SECONDS)
@@ -69,21 +70,21 @@ export function PinsSession({ deckId, cards, onExit }: { deckId: string; cards: 
   finishRef.current = finish
 
   useEffect(() => {
-    if (phase !== 'ask' || !card) return
+    if (phase !== 'ask' || !card || !timed) return
     const timer = window.setInterval(() => {
       const remain = Math.max(0, Math.ceil((endAt.current - Date.now()) / 1000))
       setLeft((current) => (current === remain ? current : remain))
       if (remain <= 0) finishRef.current(card, latinRef.current?.value ?? '', englishRef.current?.value ?? '')
     }, 200)
     return () => window.clearInterval(timer)
-  }, [phase, card])
+  }, [phase, card, timed])
 
   useEffect(() => {
     if (phase === 'ask') latinRef.current?.focus()
   }, [phase, card?.key])
 
   function restart() {
-    const next = pinQueue(cards)
+    const next = pinQueue(cards, settings.pinsSize)
     setBoth(0)
     setLatinHits(0)
     setEnglishHits(0)
@@ -118,10 +119,12 @@ export function PinsSession({ deckId, cards, onExit }: { deckId: string; cards: 
   }
 
   return (
-    <SessionChrome title={info.title} detail={`${index + 1} / ${queue.length} · ${phase === 'ask' ? `${left} s` : 'wynik'}`} hint={info.hint} onExit={onExit}>
-      <div className="timebar" aria-hidden="true">
-        <span style={{ width: `${(left / SECONDS) * 100}%` }} />
-      </div>
+    <SessionChrome title={info.title} detail={`${index + 1} / ${queue.length}${phase === 'ask' ? (timed ? ` · ${left} s` : '') : ' · wynik'}`} hint={info.hint} onExit={onExit}>
+      {timed ? (
+        <div className="timebar" aria-hidden="true">
+          <span style={{ width: `${(left / SECONDS) * 100}%` }} />
+        </div>
+      ) : null}
       <div className="sheet">
         <CardFace html={card.frontHtml || `<p>${card.frontText || 'Fiszka'}</p>`} css={card.css} deckId={deckId} />
         {phase === 'result' ? (
@@ -160,7 +163,7 @@ export function PinsSession({ deckId, cards, onExit }: { deckId: string; cards: 
           <button type="submit" className="button primary">
             Sprawdź
           </button>
-          <p className="hint">Po polsku nie liczy się. Zostaje {left} s.</p>
+          <p className="hint">Po polsku nie liczy się.{timed ? ` Zostaje ${left} s.` : ' Bez limitu czasu.'}</p>
         </form>
       ) : (
         <button type="button" className="button primary wide" onClick={() => openCard(index + 1)}>

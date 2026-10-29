@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { cardsFor, deleteDeck, getDeck, progressFor, resetProgress } from '../lib/db'
 import { revokeDeckMedia } from '../lib/mediaCache'
-import { NEW_LIMIT } from '../lib/queue'
+import { limitOf, loadSettings } from '../lib/settings'
 import { karty, summarize, type DeckStats } from '../lib/stats'
 import { STUDY_MODES } from '../modes'
 import type { DeckRow, Mode } from '../types'
@@ -59,7 +59,7 @@ export function DeckHome({
 
   if (!deck || !stats) return <p className="muted">Otwieram talię…</p>
 
-  const sessionCount = stats.due + Math.min(NEW_LIMIT, stats.fresh)
+  const sessionCount = stats.due + limitOf(loadSettings().newPerSession, stats.fresh)
   const accuracy = stats.practiceSeen === 0 ? null : Math.round((stats.practiceCorrect / stats.practiceSeen) * 100)
 
   return (

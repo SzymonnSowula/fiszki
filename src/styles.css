@@ -74,7 +74,7 @@ main.shell { padding: 28px 0 72px; }
   padding: 12px 18px;
 }
 .button.primary { background: var(--copper-deep); color: white; }
-.button.ghost { background: transparent; border-color: var(--line); }
+.button.ghost { background: transparent; border-color: var(--line); width: auto; height: auto; animation: none; }
 .button.danger { background: var(--bad); color: white; }
 .button.wide { width: 100%; }
 .button:disabled { opacity: 0.45; cursor: default; }
@@ -322,3 +322,48 @@ body { -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
 button, label, summary, [role="button"] { touch-action: manipulation; -webkit-user-select: none; user-select: none; }
 .shell { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
 main.shell { padding-bottom: calc(72px + env(safe-area-inset-bottom)); }
+
+.bar-end { display: flex; align-items: center; gap: 14px; }
+.settings-button { padding: 8px 14px; font-size: 0.92rem; }
+.small { font-size: 0.88rem; }
+.setting-group { display: flex; flex-direction: column; gap: 12px; }
+.setting {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.03);
+}
+.setting-title { font-weight: 640; }
+.setting-controls, .delay-field { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.settings input[type="number"], .settings select {
+  width: 6.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 9px 10px;
+  color: var(--ink);
+  font: inherit;
+}
+.settings select { width: auto; }
+.settings select option { background: var(--bg); }
+.settings input:disabled { opacity: 0.5; }
+.check { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+.check input { width: 1.1rem; height: 1.1rem; accent-color: var(--copper); }
+.grade-table { display: grid; grid-template-columns: 6rem auto auto; gap: 10px 14px; align-items: center; justify-content: start; }
+.grade-row { display: contents; }
+.grade-name { font-weight: 640; }
+.grade-name.again { color: #e7a49d; }
+.grade-name.hard { color: #e0b07a; }
+.grade-name.good { color: #8fd0ad; }
+.grade-name.easy { color: #8ccbd2; }
+@media (max-width: 640px) {
+  .brand-note { display: none; }
+  .setting { flex-direction: column; align-items: stretch; }
+  .grade-table { grid-template-columns: 4.5rem auto auto; gap: 8px; }
+  .settings .delay-field input[type="number"] { width: 4.5rem; }
+  .settings .grade-table > .grade-row > input[type="number"] { width: 4.5rem; }
+}

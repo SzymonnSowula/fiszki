@@ -5,9 +5,14 @@ import { karty } from './lib/stats'
 import type { Mode } from './types'
 import { DeckHome } from './screens/DeckHome'
 import { Library } from './screens/Library'
+import { SettingsScreen } from './screens/SettingsScreen'
 import { Study } from './screens/Study'
 
-type Screen = { name: 'library' } | { name: 'deck'; deckId: string } | { name: 'study'; deckId: string; mode: Mode }
+type Screen =
+  | { name: 'library' }
+  | { name: 'deck'; deckId: string }
+  | { name: 'study'; deckId: string; mode: Mode }
+  | { name: 'settings'; back: Screen }
 
 function waitPaint(): Promise<void> {
   return new Promise((resolve) => {
@@ -117,7 +122,14 @@ export function App() {
             </svg>
             <span className="wordmark">Fiszki</span>
           </button>
-          <span className="muted brand-note">lokalnie, z pliku .apkg</span>
+          <div className="bar-end">
+            <span className="muted brand-note">lokalnie, z pliku .apkg</span>
+            {screen.name !== 'settings' && screen.name !== 'study' ? (
+              <button type="button" className="button ghost settings-button" onClick={() => setScreen({ name: 'settings', back: screen })}>
+                Ustawienia
+              </button>
+            ) : null}
+          </div>
         </div>
       </header>
       <main className="shell">
@@ -141,6 +153,7 @@ export function App() {
             }}
           />
         ) : null}
+        {screen.name === 'settings' ? <SettingsScreen onBack={() => setScreen(screen.back)} /> : null}
         {screen.name === 'study' ? (
           <Study deckId={screen.deckId} mode={screen.mode} onExit={() => setScreen({ name: 'deck', deckId: screen.deckId })} />
         ) : null}
