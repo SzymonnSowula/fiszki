@@ -127,7 +127,8 @@ export function renderTemplate(
 }
 
 export function splitAnswer(full: string, front: string): string {
-  const quoted = full.split(/<hr[^>]*id=(['"])answer\1[^>]*>/i)
+  // Bez grupy przechwytującej: split() wstawiłby przechwycony cudzysłów do wyniku.
+  const quoted = full.split(/<hr[^>]*id=(?:"answer"|'answer')[^>]*>/i)
   if (quoted.length > 1) return quoted.slice(1).join('')
   const bare = full.split(/<hr[^>]*id=answer[^>]*>/i)
   if (bare.length > 1) return bare.slice(1).join('')

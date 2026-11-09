@@ -6,6 +6,7 @@ import { karty } from './lib/stats'
 import type { Mode } from './types'
 import { DeckHome } from './screens/DeckHome'
 import { Library } from './screens/Library'
+import { ParserScreen } from './screens/ParserScreen'
 import { SettingsScreen } from './screens/SettingsScreen'
 import { Study } from './screens/Study'
 
@@ -14,6 +15,7 @@ type Screen =
   | { name: 'deck'; deckId: string }
   | { name: 'study'; deckId: string; mode: Mode }
   | { name: 'settings'; back: Screen }
+  | { name: 'parser'; back: Screen }
 
 function waitPaint(): Promise<void> {
   return new Promise((resolve) => {
@@ -89,7 +91,7 @@ export function App() {
       event.preventDefault()
       setDragging(false)
       const place = screenRef.current.name
-      if (place === 'study' || importingRef.current) return
+      if (place === 'study' || place === 'parser' || importingRef.current) return
       const file = event.dataTransfer?.files?.[0]
       if (file) void onFileRef.current(file)
     }
@@ -129,10 +131,25 @@ export function App() {
           </button>
           <div className="bar-end">
             <span className="muted brand-note">lokalnie, z Anki, PDF, CSV…</span>
-            {screen.name !== 'settings' && screen.name !== 'study' ? (
-              <button type="button" className="button ghost settings-button" onClick={() => setScreen({ name: 'settings', back: screen })}>
-                Ustawienia
-              </button>
+            {screen.name !== 'study' ? (
+              <nav className="nav" aria-label="Menu">
+                <button
+                  type="button"
+                  className={screen.name === 'parser' ? 'button ghost settings-button active' : 'button ghost settings-button'}
+                  aria-current={screen.name === 'parser' ? 'page' : undefined}
+                  onClick={() => screen.name !== 'parser' && setScreen({ name: 'parser', back: screen })}
+                >
+                  Parser Anki
+                </button>
+                <button
+                  type="button"
+                  className={screen.name === 'settings' ? 'button ghost settings-button active' : 'button ghost settings-button'}
+                  aria-current={screen.name === 'settings' ? 'page' : undefined}
+                  onClick={() => screen.name !== 'settings' && setScreen({ name: 'settings', back: screen })}
+                >
+                  Ustawienia
+                </button>
+              </nav>
             ) : null}
           </div>
         </div>
@@ -159,6 +176,16 @@ export function App() {
           />
         ) : null}
         {screen.name === 'settings' ? <SettingsScreen onBack={() => setScreen(screen.back)} /> : null}
+        {screen.name === 'parser' ? (
+          <ParserScreen
+            onBack={() => setScreen(screen.back)}
+            onSaved={(deckId, message) => {
+              setNotice(message)
+              setRevision((value) => value + 1)
+              setScreen({ name: 'deck', deckId })
+            }}
+          />
+        ) : null}
         {screen.name === 'study' ? (
           <Study deckId={screen.deckId} mode={screen.mode} onExit={() => setScreen({ name: 'deck', deckId: screen.deckId })} />
         ) : null}
