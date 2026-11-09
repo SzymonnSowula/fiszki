@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { saveImported } from './lib/db'
+import { FORMATS_LABEL, fileKind } from './lib/formats'
 import { revokeDeckMedia } from './lib/mediaCache'
 import { karty } from './lib/stats'
 import type { Mode } from './types'
@@ -34,8 +35,8 @@ export function App() {
 
   async function handleFile(file: File) {
     if (importingRef.current) return
-    if (!file.name.toLowerCase().endsWith('.apkg')) {
-      setError('Wybierz plik .apkg wyeksportowany z Anki.')
+    if (!fileKind(file.name)) {
+      setError(`Ten format nie jest obsługiwany. Wybierz plik: ${FORMATS_LABEL}.`)
       return
     }
     if (file.size > 250 * 1024 * 1024) {
@@ -47,11 +48,15 @@ export function App() {
     setImporting('Otwieram plik…')
     try {
       await waitPaint()
-      const [{ parseApkg }, { loadSql }] = await Promise.all([import('./lib/apkg'), import('./lib/sql')])
-      const sql = await loadSql()
-      const bytes = new Uint8Array(await file.arrayBuffer())
-      const parsed = await parseApkg(bytes, sql, { fileName: file.name, onProgress: setImporting })
-      if (parsed.length === 0) throw new Error('W tej paczce nie ma fiszek.')
+      const { parseFile } = await import('./lib/importers')
+      const parsed = await parseFile(file, setImporting)
+      if (parsed.length === 0) {
+        throw new Error(
+          fileKind(file.name) === 'apkg'
+            ? 'W tej paczce nie ma fiszek.'
+            : 'Nie znalazłem w pliku par pytanie–odpowiedź. Najlepiej działa tabela (pytanie w 1. kolumnie, odpowiedź w 2.) albo linie „pojęcie - definicja”.',
+        )
+      }
       setImporting('Zapisuję talię w przeglądarce…')
       await waitPaint()
       const ids = await saveImported(parsed, file.name)
@@ -61,7 +66,7 @@ export function App() {
       setRevision((value) => value + 1)
       setScreen(parsed.length === 1 ? { name: 'deck', deckId: ids[0] } : { name: 'library' })
     } catch (caught) {
-      const message = caught instanceof Error ? caught.message : 'Nie udało się wczytać tej paczki.'
+      const message = caught instanceof Error ? caught.message : 'Nie udało się wczytać tego pliku.'
       setError(message)
     } finally {
       setImporting(null)
@@ -123,7 +128,7 @@ export function App() {
             <span className="wordmark">Fiszki</span>
           </button>
           <div className="bar-end">
-            <span className="muted brand-note">lokalnie, z pliku .apkg</span>
+            <span className="muted brand-note">lokalnie, z Anki, PDF, CSV…</span>
             {screen.name !== 'settings' && screen.name !== 'study' ? (
               <button type="button" className="button ghost settings-button" onClick={() => setScreen({ name: 'settings', back: screen })}>
                 Ustawienia

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { FORMATS_LABEL } from '../lib/formats'
 import { listDecks, listProgress, deleteDeck } from '../lib/db'
 import { revokeDeckMedia } from '../lib/mediaCache'
 import { karty, summarize } from '../lib/stats'
@@ -53,10 +54,10 @@ export function Library({
   return (
     <div className="stack">
       <div className={dragging ? 'drop hot' : 'drop'}>
-        <p className="kicker">Anki .apkg</p>
-        <h1>Upuść tutaj paczkę z fiszkami</h1>
+        <p className="kicker">{FORMATS_LABEL}</p>
+        <h1>Upuść tutaj plik z fiszkami</h1>
         <p className="lead">
-          Plik zostaje w tej przeglądarce. Możesz wrócić do talii bez ponownego importu i odpalić fiszki albo inne ćwiczenia.
+          Paczka z Anki albo tabela/lista „pojęcie – definicja” z PDF, Excela, Worda czy CSV. Plik zostaje w tej przeglądarce. Możesz wrócić do talii bez ponownego importu i odpalić fiszki albo inne ćwiczenia.
         </p>
         <label className="button primary">
           Wybierz plik

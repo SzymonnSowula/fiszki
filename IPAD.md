@@ -21,5 +21,5 @@ przez Sideloadly (dane i talie zostają, jeśli instalujesz na wierzch). Płatne
 Apple Developer (99 USD/rok) = rok ważności i instalacja przez TestFlight.
 
 ## 3. Nauka
-Otwórz Fiszki z ekranu początkowego → Wybierz plik → wskaż .apkg w Plikach.
+Otwórz Fiszki z ekranu początkowego → Wybierz plik → wskaż plik w Plikach (.apkg, PDF, CSV, Excel, Word, TXT…).
 Wszystko działa offline.
